@@ -19,9 +19,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "externalBin": [
-      "backend-bundle/backend"
-    ],
     "resources": [
       "resources/*"
     ],
