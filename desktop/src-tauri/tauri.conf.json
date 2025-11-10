@@ -30,6 +30,11 @@
       "frameworks": [],
       "providerShortName": null,
       "signingIdentity": null
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      }
     }
   },
   "app": {
