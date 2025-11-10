@@ -1,7 +1,8 @@
 use log::{error, info};
 use std::process::{Child, Command as StdCommand, Stdio};
 use std::sync::Mutex;
-use tauri::State;
+use std::path::PathBuf;
+use tauri::{State, AppHandle, Manager};
 
 pub struct BackendProcess {
     child: Mutex<Option<Child>>,
@@ -14,8 +15,13 @@ impl BackendProcess {
         }
     }
 
-    pub fn start(&self, port: u16) -> Result<(), String> {
+    pub fn start(&self, backend_path: PathBuf, port: u16) -> Result<(), String> {
         info!("啟動 Node.js Backend Sidecar on port {}", port);
+
+        // Validate port range (non-privileged ports only)
+        if port < 1024 || port > 65535 {
+            return Err("Port must be between 1024 and 65535".to_string());
+        }
 
         // 檢查是否已經在運行
         let mut child_lock = self.child.lock().unwrap();
@@ -23,11 +29,14 @@ impl BackendProcess {
             return Err("Backend 已經在運行".to_string());
         }
 
-        // 啟動後端進程
-        // 注意：在開發階段，我們先使用 Node.js 直接運行
-        // 在生產環境中，這將是打包的二進制文件
+        // Verify backend file exists
+        if !backend_path.exists() {
+            return Err(format!("Backend file not found: {:?}", backend_path));
+        }
+
+        // 啟動後端進程 (使用絕對路徑)
         let child = StdCommand::new("node")
-            .arg("../backend/dist/index.js")
+            .arg(&backend_path)
             .arg("--port")
             .arg(port.to_string())
             .stdout(Stdio::piped())
@@ -63,10 +72,10 @@ impl BackendProcess {
         }
     }
 
-    pub fn restart(&self, port: u16) -> Result<(), String> {
+    pub fn restart(&self, backend_path: PathBuf, port: u16) -> Result<(), String> {
         self.stop().ok(); // 嘗試停止，忽略錯誤
         std::thread::sleep(std::time::Duration::from_secs(1));
-        self.start(port)
+        self.start(backend_path, port)
     }
 
     pub fn is_running(&self) -> bool {
@@ -77,11 +86,34 @@ impl BackendProcess {
 
 #[tauri::command]
 pub fn start_backend(
+    app_handle: AppHandle,
     backend: State<BackendProcess>,
     port: Option<u16>,
 ) -> Result<String, String> {
     let port = port.unwrap_or(3000);
-    backend.start(port)?;
+
+    // Get absolute path to backend file
+    // In development: use relative path from project root
+    // In production: use bundled resource
+    let backend_path = if cfg!(debug_assertions) {
+        // Development mode: relative to current directory
+        std::env::current_dir()
+            .map_err(|e| format!("Failed to get current directory: {}", e))?
+            .join("backend")
+            .join("dist")
+            .join("index.js")
+    } else {
+        // Production mode: use resource directory
+        app_handle
+            .path()
+            .resource_dir()
+            .map_err(|e| format!("Failed to get resource directory: {}", e))?
+            .join("backend")
+            .join("dist")
+            .join("index.js")
+    };
+
+    backend.start(backend_path, port)?;
     Ok(format!("Backend 已在端口 {} 啟動", port))
 }
 
@@ -93,11 +125,30 @@ pub fn stop_backend(backend: State<BackendProcess>) -> Result<String, String> {
 
 #[tauri::command]
 pub fn restart_backend(
+    app_handle: AppHandle,
     backend: State<BackendProcess>,
     port: Option<u16>,
 ) -> Result<String, String> {
     let port = port.unwrap_or(3000);
-    backend.restart(port)?;
+
+    // Get absolute path (same logic as start_backend)
+    let backend_path = if cfg!(debug_assertions) {
+        std::env::current_dir()
+            .map_err(|e| format!("Failed to get current directory: {}", e))?
+            .join("backend")
+            .join("dist")
+            .join("index.js")
+    } else {
+        app_handle
+            .path()
+            .resource_dir()
+            .map_err(|e| format!("Failed to get resource directory: {}", e))?
+            .join("backend")
+            .join("dist")
+            .join("index.js")
+    };
+
+    backend.restart(backend_path, port)?;
     Ok(format!("Backend 已在端口 {} 重啟", port))
 }
 
