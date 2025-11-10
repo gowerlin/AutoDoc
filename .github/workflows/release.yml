@@ -88,15 +88,20 @@ jobs:
         working-directory: desktop
         run: npm run tauri:build
 
-      - name: Upload Windows artifacts
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Windows MSI
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./desktop/src-tauri/target/release/bundle/msi/autodoc-agent_${{ needs.create-release.outputs.version }}_x64.msi
-          asset_name: autodoc-agent_${{ needs.create-release.outputs.version }}_x64.msi
-          asset_content_type: application/octet-stream
+          files: ./desktop/src-tauri/target/release/bundle/msi/*.msi
+          tag_name: ${{ needs.create-release.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows NSIS
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./desktop/src-tauri/target/release/bundle/nsis/*.exe
+          tag_name: ${{ needs.create-release.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
   # 構建 Desktop 應用 - macOS
   build-desktop-macos:
@@ -145,14 +150,11 @@ jobs:
           fi
 
       - name: Upload macOS DMG
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/autodoc-agent_${{ needs.create-release.outputs.version }}_${{ steps.arch.outputs.arch }}.dmg
-          asset_name: autodoc-agent_${{ needs.create-release.outputs.version }}_${{ steps.arch.outputs.arch }}.dmg
-          asset_content_type: application/octet-stream
+          files: ./desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          tag_name: ${{ needs.create-release.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   # 構建 Desktop 應用 - Linux
   build-desktop-linux:
@@ -199,25 +201,14 @@ jobs:
         working-directory: desktop
         run: npm run tauri:build
 
-      - name: Upload Linux AppImage
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Linux binaries
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./desktop/src-tauri/target/release/bundle/appimage/autodoc-agent_${{ needs.create-release.outputs.version }}_amd64.AppImage
-          asset_name: autodoc-agent_${{ needs.create-release.outputs.version }}_amd64.AppImage
-          asset_content_type: application/octet-stream
-
-      - name: Upload Linux deb
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./desktop/src-tauri/target/release/bundle/deb/autodoc-agent_${{ needs.create-release.outputs.version }}_amd64.deb
-          asset_name: autodoc-agent_${{ needs.create-release.outputs.version }}_amd64.deb
-          asset_content_type: application/octet-stream
+          files: |
+            ./desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            ./desktop/src-tauri/target/release/bundle/deb/*.deb
+          tag_name: ${{ needs.create-release.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   # 打包 Backend
   package-backend:
@@ -253,14 +244,11 @@ jobs:
           tar -czf backend-bundle.tar.gz *
 
       - name: Upload backend bundle
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./desktop/backend-bundle/backend-bundle.tar.gz
-          asset_name: backend-bundle_${{ needs.create-release.outputs.version }}.tar.gz
-          asset_content_type: application/gzip
+          files: ./desktop/backend-bundle/backend-bundle.tar.gz
+          tag_name: ${{ needs.create-release.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   # 構建 Frontend (Web)
   build-frontend:
@@ -292,11 +280,8 @@ jobs:
           tar -czf frontend-dist.tar.gz *
 
       - name: Upload frontend bundle
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./frontend/dist/frontend-dist.tar.gz
-          asset_name: frontend-web_${{ needs.create-release.outputs.version }}.tar.gz
-          asset_content_type: application/gzip
+          files: ./frontend/dist/frontend-dist.tar.gz
+          tag_name: ${{ needs.create-release.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
