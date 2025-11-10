@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://autodoc:autodoc_password@db:5432/autodoc
+      - CHROME_MCP_URL=ws://chrome:3000
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+    depends_on:
+      - db
+      - chrome
+    volumes:
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - autodoc-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - autodoc-network
+
+  chrome:
+    image: browserless/chrome:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - MAX_CONCURRENT_SESSIONS=5
+      - CONNECTION_TIMEOUT=60000
+      - CHROME_REFRESH_TIME=3600000
+      - DEFAULT_BLOCK_ADS=true
+      - DEFAULT_HEADLESS=true
+    shm_size: 2gb
+    restart: unless-stopped
+    networks:
+      - autodoc-network
+
+  db:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=autodoc
+      - POSTGRES_PASSWORD=autodoc_password
+      - POSTGRES_DB=autodoc
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    restart: unless-stopped
+    networks:
+      - autodoc-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - autodoc-network
+
+volumes:
+  pgdata:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  autodoc-network:
+    driver: bridge
