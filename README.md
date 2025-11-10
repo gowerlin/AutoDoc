@@ -1,6 +1,49 @@
-# AutoDoc Agent - 文檔索引 (v1.0)
+# AutoDoc Agent
 
-## 📚 文檔清單
+## 🎯 專案概述
+
+AutoDoc Agent 是一個智能探索式使用手冊生成器，能夠自動探索網頁應用並生成結構化的使用手冊。
+
+### 版本說明
+- **v1.0**: Web 應用版本（需要 Node.js 環境）
+- **v2.0**: 桌面應用版本（單一執行檔，跨平台）✨ NEW
+
+---
+
+## 🖥️ v2.0 桌面應用 (NEW)
+
+### 特性
+- 🚀 **輕量級**：打包大小僅 ~15MB
+- 🔒 **安全**：使用 Rust + Tauri 構建
+- 🌐 **跨平台**：支援 Windows、macOS、Linux
+- ⚙️ **圖形化設定**：無需編輯配置文件
+- 🔄 **自動更新**：內建更新機制
+- 💾 **系統托盤**：最小化到系統托盤
+
+### 快速開始
+
+```bash
+# 進入桌面應用目錄
+cd desktop
+
+# 安裝依賴
+npm install
+
+# 開發模式
+npm run tauri:dev
+
+# 打包應用
+npm run tauri:build
+```
+
+### 詳細文檔
+- [桌面應用 README](desktop/README.md)
+- [v2 實作狀態](desktop/IMPLEMENTATION_STATUS.md)
+- [v2 完整規格](docs/spec/v2/)
+
+---
+
+## 📚 v1.0 文檔清單
 
 ### 1. BMAD Story Format（完整規格）
 **檔案**: `autodoc_agent_bmad_story.md`  

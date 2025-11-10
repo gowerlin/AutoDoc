@@ -1,0 +1,31 @@
+[package]
+name = "autodoc-agent-desktop"
+version = "2.0.0"
+description = "AutoDoc Agent Desktop Application"
+authors = ["AutoDoc Team"]
+license = "MIT"
+repository = "https://github.com/autodoc/agent"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0", features = [
+  "updater",
+  "dialog-all",
+  "fs-all",
+  "shell-sidecar",
+  "system-tray",
+  "protocol-asset",
+  "http-request"
+] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+confy = "0.6"
+dirs = "5.0"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+log = "0.4"
+env_logger = "0.11"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
