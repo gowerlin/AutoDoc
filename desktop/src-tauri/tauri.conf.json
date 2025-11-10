@@ -40,7 +40,7 @@
   },
   "app": {
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' http://localhost:3000 ws://localhost:3000; font-src 'self';"
     },
     "windows": [
       {
@@ -51,10 +51,11 @@
         "fullscreen": false,
         "center": true,
         "minWidth": 800,
-        "minHeight": 600
+        "minHeight": 600,
+        "devtools": false
       }
     ],
-    "withGlobalTauri": true
+    "withGlobalTauri": false
   },
   "plugins": {}
 }

@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 export const InteractionPanel: React.FC = () => {
   const {
@@ -52,10 +53,26 @@ export const InteractionPanel: React.FC = () => {
     setHumanInput('');
   };
 
-  // Render message with markdown support
+  // Render message with markdown support (with XSS protection)
   const renderMessage = (content: string, isMarkdown: boolean = false) => {
     if (isMarkdown) {
-      return <div dangerouslySetInnerHTML={{ __html: marked(content) }} />;
+      // Configure marked for security
+      marked.setOptions({
+        breaks: true,
+        gfm: true,
+        headerIds: false,
+        mangle: false
+      });
+
+      // Sanitize HTML to prevent XSS attacks
+      const rawHtml = marked(content) as string;
+      const sanitizedHtml = DOMPurify.sanitize(rawHtml, {
+        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'code', 'pre', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote'],
+        ALLOWED_ATTR: ['href', 'target', 'rel'],
+        ALLOW_DATA_ATTR: false
+      });
+
+      return <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
     }
     return <div>{content}</div>;
   };

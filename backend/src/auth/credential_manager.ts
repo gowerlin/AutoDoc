@@ -113,10 +113,14 @@ export class CredentialManager extends EventEmitter {
       iterations: 100000,
     };
 
-    // 生成或載入主密鑰
-    this.masterKey = this.deriveMasterKey(
-      encryptionKey || this.storageConfig.encryptionKey || 'default-key-change-me'
-    );
+    // 生成或載入主密鑰 - 必須提供加密密鑰
+    const key = encryptionKey || this.storageConfig.encryptionKey;
+    if (!key) {
+      throw new Error(
+        'Encryption key is required. Set ENCRYPTION_KEY environment variable or provide encryptionKey in StorageConfig.'
+      );
+    }
+    this.masterKey = this.deriveMasterKey(key);
 
     this.initialize();
   }
