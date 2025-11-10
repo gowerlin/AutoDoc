@@ -4,8 +4,10 @@
 mod config;
 mod sidecar;
 mod secure_storage;
-mod tray_v2 as tray;
+mod tray_v2;
 mod updater;
+
+use tray_v2 as tray;
 
 use log::info;
 use tauri::Manager;
