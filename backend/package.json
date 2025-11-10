@@ -10,7 +10,13 @@
     "test": "vitest",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:e2e": "playwright test tests/e2e"
+    "test:e2e": "playwright test tests/e2e",
+    "package": "npm run build && npm run package:all",
+    "package:win": "pkg . --targets node18-win-x64 --output ../desktop/backend-bundle/backend-win.exe",
+    "package:mac-intel": "pkg . --targets node18-macos-x64 --output ../desktop/backend-bundle/backend-macos-intel",
+    "package:mac-arm": "pkg . --targets node18-macos-arm64 --output ../desktop/backend-bundle/backend-macos-arm",
+    "package:linux": "pkg . --targets node18-linux-x64 --output ../desktop/backend-bundle/backend-linux",
+    "package:all": "npm run package:win && npm run package:mac-intel && npm run package:mac-arm && npm run package:linux"
   },
   "keywords": [
     "autodoc",
@@ -57,6 +63,20 @@
     "ts-node": "^10.9.0",
     "ts-node-dev": "^2.0.0",
     "vitest": "^0.34.0",
-    "@playwright/test": "^1.39.0"
+    "@playwright/test": "^1.39.0",
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "node_modules/**/*"
+    ],
+    "targets": [
+      "node18-win-x64",
+      "node18-macos-x64",
+      "node18-macos-arm64",
+      "node18-linux-x64"
+    ],
+    "outputPath": "../desktop/backend-bundle"
   }
 }

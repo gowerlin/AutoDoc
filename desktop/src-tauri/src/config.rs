@@ -177,3 +177,133 @@ pub fn reset_config() -> Result<(), String> {
     let default_config = AppConfig::default();
     save_config(default_config)
 }
+
+// ============= Tests =============
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config() {
+        let config = AppConfig::default();
+
+        // 測試基本設定預設值
+        assert_eq!(config.basic.app_name, "AutoDoc Agent");
+        assert_eq!(config.basic.language, "zh-TW");
+        assert_eq!(config.basic.auto_start, false);
+        assert_eq!(config.basic.minimize_to_tray, true);
+        assert_eq!(config.basic.check_updates, true);
+
+        // 測試認證設定預設值
+        assert_eq!(config.auth.claude_api_key, "");
+        assert_eq!(config.auth.claude_model, "claude-sonnet-4-20250514");
+        assert_eq!(config.auth.chrome_mcp_url, "http://localhost");
+        assert_eq!(config.auth.chrome_mcp_port, 3001);
+
+        // 測試探索設定預設值
+        assert_eq!(config.exploration.strategy, "importance");
+        assert_eq!(config.exploration.max_depth, 5);
+        assert_eq!(config.exploration.max_pages, 100);
+        assert_eq!(config.exploration.screenshot_quality, "medium");
+        assert_eq!(config.exploration.wait_for_network_idle, true);
+
+        // 測試進階設定預設值
+        assert_eq!(config.advanced.log_level, "info");
+        assert_eq!(config.advanced.enable_telemetry, false);
+        assert_eq!(config.advanced.concurrent_tabs, 3);
+        assert_eq!(config.advanced.api_rate_limit, 20);
+    }
+
+    #[test]
+    fn test_validate_config_valid() {
+        let mut config = AppConfig::default();
+        config.auth.claude_api_key = "sk-ant-api03-test123".to_string();
+
+        let result = validate_config(config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_config_empty_api_key() {
+        let config = AppConfig::default();
+        // API Key 為空
+
+        let result = validate_config(config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Claude API Key 不能為空"));
+    }
+
+    #[test]
+    fn test_validate_config_invalid_api_key_format() {
+        let mut config = AppConfig::default();
+        config.auth.claude_api_key = "invalid-key".to_string();
+
+        let result = validate_config(config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("格式不正確"));
+    }
+
+    #[test]
+    fn test_validate_config_invalid_max_depth() {
+        let mut config = AppConfig::default();
+        config.auth.claude_api_key = "sk-ant-api03-test".to_string();
+        config.exploration.max_depth = 0; // 無效值
+
+        let result = validate_config(config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("最大深度"));
+    }
+
+    #[test]
+    fn test_validate_config_max_depth_too_large() {
+        let mut config = AppConfig::default();
+        config.auth.claude_api_key = "sk-ant-api03-test".to_string();
+        config.exploration.max_depth = 11; // 超過最大值
+
+        let result = validate_config(config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("最大深度"));
+    }
+
+    #[test]
+    fn test_validate_config_invalid_max_pages() {
+        let mut config = AppConfig::default();
+        config.auth.claude_api_key = "sk-ant-api03-test".to_string();
+        config.exploration.max_pages = 5; // 小於最小值
+
+        let result = validate_config(config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("最大頁面數"));
+    }
+
+    #[test]
+    fn test_get_default_config_command() {
+        let config = get_default_config();
+
+        assert_eq!(config.basic.app_name, "AutoDoc Agent");
+        assert_eq!(config.basic.language, "zh-TW");
+    }
+
+    #[test]
+    fn test_storage_paths_exist() {
+        let config = AppConfig::default();
+
+        // 測試路徑是否包含 "AutoDoc"
+        assert!(config
+            .storage
+            .snapshot_storage_path
+            .to_string_lossy()
+            .contains("AutoDoc"));
+        assert!(config
+            .storage
+            .screenshot_storage_path
+            .to_string_lossy()
+            .contains("AutoDoc"));
+        assert!(config
+            .storage
+            .database_path
+            .to_string_lossy()
+            .contains("AutoDoc"));
+    }
+}
