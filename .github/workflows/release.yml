@@ -1,5 +1,9 @@
 name: Release
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 on:
   push:
     tags:
@@ -36,23 +40,44 @@ jobs:
             echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create release
+      - name: Create or get release
         id: create-release
         uses: actions/github-script@v7
         with:
           script: |
-            const { data } = await github.rest.repos.createRelease({
+            const tag = `${{ steps.get-version.outputs.version }}`;
+
+            // Try to get an existing release by tag. If found, set outputs and return.
+            try {
+              const getResp = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag
+              });
+              const data = getResp.data;
+              core.setOutput('release_id', data.id);
+              core.setOutput('upload_url', data.upload_url);
+              return data.id;
+            } catch (err) {
+              // If not found (404), continue to create. Otherwise rethrow.
+              if (err.status !== 404) throw err;
+            }
+
+            // Create a new release when no existing release is found
+            const createResp = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: `${{ steps.get-version.outputs.version }}`,
-              name: `AutoDoc Agent ${{ steps.get-version.outputs.version }}`,
-              body: `## 🎉 Release ${{ steps.get-version.outputs.version }}\n\n### 下載\n- Windows: \`autodoc-agent_${{ steps.get-version.outputs.version }}_x64.msi\`\n- macOS (Intel): \`autodoc-agent_${{ steps.get-version.outputs.version }}_x64.dmg\`\n- macOS (Apple Silicon): \`autodoc-agent_${{ steps.get-version.outputs.version }}_aarch64.dmg\`\n- Linux: \`autodoc-agent_${{ steps.get-version.outputs.version }}_amd64.AppImage\`\n\n### 變更內容\n請查看 CHANGELOG.md`,
+              tag_name: tag,
+              name: `AutoDoc Agent ${tag}`,
+              body: `## 🎉 Release ${tag}\n\n### 下載\n- Windows: \`autodoc-agent_${tag}_x64.msi\`\n- macOS (Intel): \`autodoc-agent_${tag}_x64.dmg\`\n- macOS (ARM): \`autodoc-agent_${tag}_aarch64.dmg\``,
               draft: false,
               prerelease: false
-            })
-            core.setOutput('release_id', data.id)
-            core.setOutput('upload_url', data.upload_url)
-            return data.id
+            });
+
+            const data = createResp.data;
+            core.setOutput('release_id', data.id);
+            core.setOutput('upload_url', data.upload_url);
+            return data.id;
 
   # 構建 Desktop 應用 - Windows
   build-desktop-windows:
