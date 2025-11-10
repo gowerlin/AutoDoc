@@ -3,7 +3,7 @@
 ## Overview
 This document tracks the implementation progress of the AutoDoc Agent project based on the autodoc_agent_bmad_story.md specification.
 
-## Current Status: Task 3 Complete ✅
+## Current Status: Task 4 Complete ✅
 
 ### Completed Tasks
 
@@ -129,7 +129,60 @@ This document tracks the implementation progress of the AutoDoc Agent project ba
     - Client lifecycle management
     - Broadcast and unicast messaging
 
-## Files Created (37 files)
+#### ✅ Task 4: AI Content Understanding & Generation (4/4 subtasks)
+- [x] **Subtask 4.1**: Claude Vision API Integration
+  - File: `backend/src/ai/claude_vision_client.ts`
+  - Features:
+    - Screenshot analysis with Claude Vision API (model: claude-sonnet-4-20250514)
+    - Base64 image conversion and processing
+    - Context-aware analysis (URL, navigation path, action history)
+    - Prompt template system (functionality, steps, UI elements)
+    - Retry mechanism with exponential backoff (3 attempts, 60s timeout)
+    - Batch screenshot analysis
+    - Event emitter for analysis tracking
+
+- [x] **Subtask 4.2**: Content Structuring Engine
+  - File: `backend/src/ai/content_structurer.ts`
+  - Features:
+    - Extract functionality descriptions (name, purpose, preconditions, actions, results)
+    - Generate step-by-step guides with formatted instructions
+    - Detect warnings and notes (keywords: 警告, 注意, 錯誤, 不可逆)
+    - Highlight key UI elements in descriptions
+    - Assess guide difficulty (beginner/intermediate/advanced)
+    - Estimate completion time
+    - Extract prerequisites from steps
+    - Auto-categorize functions
+    - Generate structured content with metadata
+    - Export to Markdown format
+
+- [x] **Subtask 4.3**: Content Deduplication
+  - File: `backend/src/ai/content_deduplication.ts`
+  - Features:
+    - Detect duplicate content using text and semantic similarity
+    - Semantic similarity via Claude API (threshold: 0.9)
+    - Text similarity using Jaccard on character n-grams
+    - Batch duplicate detection across multiple contents
+    - Merge related sections with alternative paths
+    - Optimize content hierarchy (adjust levels H1-H6)
+    - Generate table of contents with anchors
+    - Calculate manual statistics (depth, section count)
+    - Export to Markdown with TOC
+
+- [x] **Subtask 4.4**: Terminology Management
+  - File: `backend/src/ai/terminology_manager.ts`
+  - Features:
+    - Extract terminology using AI or rule-based methods
+    - Identify product-specific terms and technical jargon
+    - Build terminology database (term → definition)
+    - Manage synonyms and ensure consistency
+    - Auto-fix inconsistent terminology in content
+    - Detect undefined terms
+    - Generate glossary with categorization
+    - Sort by alphabetical, category, or frequency
+    - Consistency scoring and reporting
+    - Import/export terminology database
+
+## Files Created (41 files)
 
 **Explorer Module (Task 2)**
 - `backend/src/explorer/dom_analyzer.ts` - DOM structure analysis (580 lines)
@@ -138,19 +191,25 @@ This document tracks the implementation progress of the AutoDoc Agent project ba
 - `backend/src/explorer/visualization.ts` - Real-time visualization (480 lines)
 - `backend/src/explorer/exploration_engine.ts` - Main exploration engine (360 lines)
 
-**Collaboration Module (Task 3 - NEW)**
+**Collaboration Module (Task 3)**
 - `backend/src/collaboration/state_machine.ts` - State management (450 lines)
 - `backend/src/collaboration/ai_questioning.ts` - AI questioning (460 lines)
 - `backend/src/collaboration/human_observation.ts` - Human action tracking (520 lines)
 - `backend/src/collaboration/human_questioning.ts` - Human Q&A system (380 lines)
 - `backend/src/collaboration/realtime_communication.ts` - WebSocket layer (490 lines)
 
+**AI Module (Task 4 - NEW)**
+- `backend/src/ai/claude_vision_client.ts` - Claude Vision API integration (650 lines)
+- `backend/src/ai/content_structurer.ts` - Content structuring engine (780 lines)
+- `backend/src/ai/content_deduplication.ts` - Content deduplication & merging (620 lines)
+- `backend/src/ai/terminology_manager.ts` - Terminology management (680 lines)
+
 ## Code Statistics
 
-- **Total Files**: 37
-- **Lines of Code**: ~7,800+
-- **Tasks Complete**: 3/11 (Task 1, 2 & 3)
-- **Completion**: ~27% of core functionality
+- **Total Files**: 41
+- **Lines of Code**: ~10,500+
+- **Tasks Complete**: 4/11 (Task 1, 2, 3 & 4)
+- **Completion**: ~36% of core functionality
 
 ## Key Features Implemented
 
@@ -181,13 +240,19 @@ This document tracks the implementation progress of the AutoDoc Agent project ba
 - **Learning System**: Pattern recognition and knowledge base building
 - **Quick Commands**: Skip, focus, exclude, add URL commands
 
-## Next Steps
+### AI Content Understanding & Generation (Task 4) ✅
+- **Vision Analysis**: Claude Vision API integration with screenshot analysis
+- **Prompt Templates**: Pre-built prompts for functionality, steps, and UI elements
+- **Content Structuring**: Extract functionalities, generate step-by-step guides
+- **Warning Detection**: Auto-detect warnings, notes, and cautions in content
+- **Deduplication**: Text and semantic similarity detection (90% threshold)
+- **Content Merging**: Merge related sections with alternative paths
+- **Hierarchy Optimization**: Auto-adjust section levels and generate TOC
+- **Terminology Management**: Extract, define, and ensure term consistency
+- **Glossary Generation**: Categorized terminology with definitions
+- **Markdown Export**: Full documentation export capability
 
-### Task 4: AI Content Understanding & Generation (0/4 subtasks)
-- [ ] Claude Vision API integration
-- [ ] Content structuring engine
-- [ ] Content deduplication
-- [ ] Terminology management
+## Next Steps
 
 ### Task 5: Google Docs Integration (0/4 subtasks)
 - [ ] Google Docs API integration
@@ -195,9 +260,28 @@ This document tracks the implementation progress of the AutoDoc Agent project ba
 - [ ] Batch operations
 - [ ] Incremental updater
 
+### Task 6: Frontend UI (0/6 subtasks)
+- [ ] Frontend architecture setup
+- [ ] Browser preview component
+- [ ] Exploration progress visualization
+- [ ] Interaction panel
+- [ ] Control panel
+- [ ] Log viewer
+
 ## Recent Updates
 
-### 2025-11-10 (Current - Part 2)
+### 2025-11-10 (Current - Part 3)
+- ✅ Completed Task 4: AI Content Understanding & Generation
+- ✅ Added 4 AI modules totaling ~2,730 lines of code
+- ✅ Claude Vision API integration with multi-prompt support
+- ✅ Content structuring with step-by-step guide generation
+- ✅ Duplicate detection using text + semantic similarity
+- ✅ Terminology management with consistency checking
+- ✅ Glossary generation with categorization
+- ✅ Full Markdown export capability
+- 🎯 Ready for Task 5: Google Docs Integration
+
+### 2025-11-10 (Part 2)
 - ✅ Completed Task 3: Bidirectional Collaboration System
 - ✅ Added 5 new modules totaling ~2,300 lines of code
 - ✅ Implemented full AI-human collaboration cycle
@@ -206,7 +290,6 @@ This document tracks the implementation progress of the AutoDoc Agent project ba
 - ✅ Human action tracking and learning system
 - ✅ Claude API integration for human Q&A
 - ✅ WebSocket real-time communication layer
-- 🎯 Ready for Task 4: AI Content Understanding & Generation
 
 ### 2025-11-10 (Part 1)
 - ✅ Completed Task 2: Intelligent Web Structure Explorer
