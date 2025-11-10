@@ -312,6 +312,19 @@ export class SnapshotStorage extends EventEmitter {
         throw new Error(`Snapshot ${snapshotId} not found`);
       }
 
+      // Validate output path to prevent path traversal
+      const resolvedOutputPath = path.resolve(outputPath);
+      const allowedDirs = [
+        path.resolve(process.cwd()),
+        path.resolve(this.config.baseDir)
+      ];
+
+      // Check if output path is within allowed directories
+      const isAllowed = allowedDirs.some(dir => resolvedOutputPath.startsWith(dir));
+      if (!isAllowed) {
+        throw new Error('Export path must be within current working directory or storage directory');
+      }
+
       // 使用 tar + gzip 壓縮
       const tarGzPath = outputPath.endsWith('.tar.gz') ? outputPath : `${outputPath}.tar.gz`;
 
@@ -386,8 +399,38 @@ export class SnapshotStorage extends EventEmitter {
    * Private helper methods
    */
 
+  /**
+   * Validate and sanitize snapshot ID to prevent path traversal
+   */
+  private validateSnapshotId(snapshotId: string): void {
+    // Only allow alphanumeric characters, hyphens, and underscores
+    if (!/^[a-zA-Z0-9_-]+$/.test(snapshotId)) {
+      throw new Error(
+        `Invalid snapshot ID format: ${snapshotId}. Only alphanumeric characters, hyphens, and underscores are allowed.`
+      );
+    }
+
+    // Additional length check
+    if (snapshotId.length > 255) {
+      throw new Error('Snapshot ID too long (max 255 characters)');
+    }
+  }
+
   private getSnapshotDir(snapshotId: string): string {
-    return path.join(this.config.baseDir, 'snapshots', snapshotId);
+    // Validate snapshot ID before constructing path
+    this.validateSnapshotId(snapshotId);
+
+    const snapshotDir = path.join(this.config.baseDir, 'snapshots', snapshotId);
+
+    // Verify the resolved path is within the base directory
+    const resolvedPath = path.resolve(snapshotDir);
+    const basePath = path.resolve(this.config.baseDir, 'snapshots');
+
+    if (!resolvedPath.startsWith(basePath + path.sep) && resolvedPath !== basePath) {
+      throw new Error('Path traversal detected: Invalid snapshot directory');
+    }
+
+    return snapshotDir;
   }
 
   private async exists(filePath: string): Promise<boolean> {
