@@ -4,7 +4,7 @@
 mod config;
 mod sidecar;
 mod secure_storage;
-mod tray;
+mod tray_v2 as tray;
 mod updater;
 
 use log::info;
@@ -16,8 +16,14 @@ fn main() {
     info!("Starting AutoDoc Agent Desktop v{}...", env!("CARGO_PKG_VERSION"));
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             info!("Application setup...");
+
+            // Initialize tray icon
+            tray::create_tray(app.handle())?;
 
             // 初始化 Backend Process
             let backend = sidecar::BackendProcess::new();
@@ -39,12 +45,10 @@ fn main() {
 
             // Note: Backend is now started manually via the UI to ensure proper path resolution
             // The backend requires AppHandle for path resolution, which is not available here
-            info!("Backend will be started on demand via UI")
+            info!("Backend will be started on demand via UI");
 
             Ok(())
         })
-        .system_tray(tray::create_tray())
-        .on_system_tray_event(tray::handle_tray_event)
         .invoke_handler(tauri::generate_handler![
             // Config commands
             config::load_config,
