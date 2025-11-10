@@ -34,7 +34,7 @@ pub fn get_credential(key: &str) -> Result<String, String> {
                     info!("Credential '{}' retrieved from keychain", key);
                     Ok(password)
                 }
-                Err(e) => {
+                Err(_e) => {
                     // Don't log the full error as it might contain sensitive info
                     Err(format!("Credential not found or inaccessible: {}", key))
                 }
@@ -56,7 +56,7 @@ pub fn delete_credential(key: &str) -> Result<(), String> {
                     info!("Credential '{}' deleted from keychain", key);
                     Ok(())
                 }
-                Err(e) => {
+                Err(_e) => {
                     // It's okay if the credential doesn't exist
                     info!("Credential '{}' was not in keychain", key);
                     Ok(())

@@ -1,5 +1,5 @@
-use log::{error, info};
-use tauri::{AppHandle, Manager, Wry};
+use log::info;
+use tauri::{AppHandle, Wry};
 
 #[derive(serde::Serialize, Clone)]
 pub struct UpdateInfo {
@@ -10,7 +10,7 @@ pub struct UpdateInfo {
 }
 
 #[tauri::command]
-pub async fn check_for_updates(app: AppHandle<Wry>) -> Result<UpdateInfo, String> {
+pub async fn check_for_updates(_app: AppHandle<Wry>) -> Result<UpdateInfo, String> {
     info!("檢查更新...");
 
     // 注意：Tauri v2 的更新 API 已經改變
@@ -44,7 +44,7 @@ pub async fn check_for_updates(app: AppHandle<Wry>) -> Result<UpdateInfo, String
 }
 
 #[tauri::command]
-pub async fn install_update(app: AppHandle<Wry>) -> Result<(), String> {
+pub async fn install_update(_app: AppHandle<Wry>) -> Result<(), String> {
     info!("開始安裝更新...");
 
     // 在 Tauri v2 中，更新機制需要通過插件實現
