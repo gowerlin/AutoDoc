@@ -1,0 +1,302 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v2.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  # 建立 Release
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create-release.outputs.release_id }}
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+      version: ${{ steps.get-version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: get-version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create release
+        id: create-release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `${{ steps.get-version.outputs.version }}`,
+              name: `AutoDoc Agent ${{ steps.get-version.outputs.version }}`,
+              body: `## 🎉 Release ${{ steps.get-version.outputs.version }}\n\n### 下載\n- Windows: \`autodoc-agent_${{ steps.get-version.outputs.version }}_x64.msi\`\n- macOS (Intel): \`autodoc-agent_${{ steps.get-version.outputs.version }}_x64.dmg\`\n- macOS (Apple Silicon): \`autodoc-agent_${{ steps.get-version.outputs.version }}_aarch64.dmg\`\n- Linux: \`autodoc-agent_${{ steps.get-version.outputs.version }}_amd64.AppImage\`\n\n### 變更內容\n請查看 CHANGELOG.md`,
+              draft: false,
+              prerelease: false
+            })
+            core.setOutput('release_id', data.id)
+            core.setOutput('upload_url', data.upload_url)
+            return data.id
+
+  # 構建 Desktop 應用 - Windows
+  build-desktop-windows:
+    name: Build Desktop (Windows)
+    needs: create-release
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './desktop/src-tauri -> target'
+
+      - name: Install frontend dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build desktop app
+        working-directory: desktop
+        run: npm run tauri:build
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./desktop/src-tauri/target/release/bundle/msi/autodoc-agent_${{ needs.create-release.outputs.version }}_x64.msi
+          asset_name: autodoc-agent_${{ needs.create-release.outputs.version }}_x64.msi
+          asset_content_type: application/octet-stream
+
+  # 構建 Desktop 應用 - macOS
+  build-desktop-macos:
+    name: Build Desktop (macOS)
+    needs: create-release
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [x86_64-apple-darwin, aarch64-apple-darwin]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './desktop/src-tauri -> target'
+
+      - name: Install frontend dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build desktop app
+        working-directory: desktop
+        run: npm run tauri:build -- --target ${{ matrix.target }}
+
+      - name: Set architecture name
+        id: arch
+        run: |
+          if [ "${{ matrix.target }}" = "x86_64-apple-darwin" ]; then
+            echo "arch=x64" >> $GITHUB_OUTPUT
+          else
+            echo "arch=aarch64" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload macOS DMG
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/autodoc-agent_${{ needs.create-release.outputs.version }}_${{ steps.arch.outputs.arch }}.dmg
+          asset_name: autodoc-agent_${{ needs.create-release.outputs.version }}_${{ steps.arch.outputs.arch }}.dmg
+          asset_content_type: application/octet-stream
+
+  # 構建 Desktop 應用 - Linux
+  build-desktop-linux:
+    name: Build Desktop (Linux)
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './desktop/src-tauri -> target'
+
+      - name: Install dependencies (Ubuntu)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install frontend dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build desktop app
+        working-directory: desktop
+        run: npm run tauri:build
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./desktop/src-tauri/target/release/bundle/appimage/autodoc-agent_${{ needs.create-release.outputs.version }}_amd64.AppImage
+          asset_name: autodoc-agent_${{ needs.create-release.outputs.version }}_amd64.AppImage
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux deb
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./desktop/src-tauri/target/release/bundle/deb/autodoc-agent_${{ needs.create-release.outputs.version }}_amd64.deb
+          asset_name: autodoc-agent_${{ needs.create-release.outputs.version }}_amd64.deb
+          asset_content_type: application/octet-stream
+
+  # 打包 Backend
+  package-backend:
+    name: Package Backend
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Package all platforms
+        working-directory: backend
+        run: npm run package:all
+
+      - name: Create backend archive
+        run: |
+          cd desktop/backend-bundle
+          tar -czf backend-bundle.tar.gz *
+
+      - name: Upload backend bundle
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./desktop/backend-bundle/backend-bundle.tar.gz
+          asset_name: backend-bundle_${{ needs.create-release.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
+
+  # 構建 Frontend (Web)
+  build-frontend:
+    name: Build Frontend (Web)
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Create frontend archive
+        run: |
+          cd frontend/dist
+          tar -czf frontend-dist.tar.gz *
+
+      - name: Upload frontend bundle
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./frontend/dist/frontend-dist.tar.gz
+          asset_name: frontend-web_${{ needs.create-release.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
