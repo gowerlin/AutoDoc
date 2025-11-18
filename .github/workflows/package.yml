@@ -1,7 +1,7 @@
 name: Package
 
 # 手動觸發打包流程，用於測試或創建 beta 版本
-on:
+"on":
   workflow_dispatch:
     inputs:
       build_target:
@@ -25,7 +25,9 @@ jobs:
   # 打包 Desktop - Windows
   package-desktop-windows:
     name: Package Desktop (Windows)
-    if: ${{ github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'desktop-windows' }}
+    if: >-
+      ${{ github.event.inputs.build_target == 'all' ||
+          github.event.inputs.build_target == 'desktop-windows' }}
     runs-on: windows-latest
 
     steps:
@@ -61,7 +63,7 @@ jobs:
         run: |
           # Get version from package.json
           VERSION=$(cd desktop && node -p "require('./package.json').version")
-          
+
           # Rename MSI
           cd desktop/src-tauri/target/release/bundle/msi
           for file in *.msi; do
@@ -70,7 +72,7 @@ jobs:
               break
             fi
           done
-          
+
           # Rename NSIS if exists
           cd ../nsis
           for file in *.exe; do
@@ -94,7 +96,9 @@ jobs:
   # 打包 Desktop - macOS
   package-desktop-macos:
     name: Package Desktop (macOS)
-    if: ${{ github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'desktop-macos' }}
+    if: >-
+      ${{ github.event.inputs.build_target == 'all' ||
+          github.event.inputs.build_target == 'desktop-macos' }}
     runs-on: macos-latest
     strategy:
       matrix:
@@ -142,7 +146,7 @@ jobs:
           # Get version from package.json
           VERSION=$(cd desktop && node -p "require('./package.json').version")
           ARCH="${{ steps.arch.outputs.arch }}"
-          
+
           cd desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg
           for file in *.dmg; do
             if [ -f "$file" ]; then
@@ -164,7 +168,9 @@ jobs:
   # 打包 Desktop - Linux
   package-desktop-linux:
     name: Package Desktop (Linux)
-    if: ${{ github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'desktop-linux' }}
+    if: >-
+      ${{ github.event.inputs.build_target == 'all' ||
+          github.event.inputs.build_target == 'desktop-linux' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -210,7 +216,7 @@ jobs:
         run: |
           # Get version from package.json
           VERSION=$(cd desktop && node -p "require('./package.json').version")
-          
+
           # Rename AppImage
           cd desktop/src-tauri/target/release/bundle/appimage
           for file in *.AppImage; do
@@ -219,7 +225,7 @@ jobs:
               break
             fi
           done
-          
+
           # Rename DEB if exists
           cd ../deb
           for file in *.deb; do
@@ -244,7 +250,9 @@ jobs:
   # 打包 Backend
   package-backend:
     name: Package Backend
-    if: ${{ github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'backend' }}
+    if: >-
+      ${{ github.event.inputs.build_target == 'all' ||
+          github.event.inputs.build_target == 'backend' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -280,7 +288,9 @@ jobs:
   # 構建 Frontend
   package-frontend:
     name: Package Frontend (Web)
-    if: ${{ github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'frontend' }}
+    if: >-
+      ${{ github.event.inputs.build_target == 'all' ||
+          github.event.inputs.build_target == 'frontend' }}
     runs-on: ubuntu-latest
 
     steps:
